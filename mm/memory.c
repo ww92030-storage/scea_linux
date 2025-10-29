@@ -5842,6 +5842,50 @@ unlock:
 	return 0;
 }
 
+struct mm_cost_delta {
+    //// Difference in the number of TLB misses.
+    //s64 tlb_misses;
+
+    //// Difference in the number of page faults.
+    //s64 page_fault_freq;
+
+    //// CPU time spent doing things like coalescing/defraging/zeroing pages.
+    //s64 kernel_computation;
+
+    // Total estimated cost in cycles.
+    u64 cost;
+
+    // Total estimated benefit in cycles.
+    u64 benefit;
+
+    // HACK: extra info about assumptions the estimator made. This isn't
+    // fundamentally needed, but it is the fastest way to avoid races between
+    // the estimator and the execution of policies.
+    u64 extra;
+};
+
+// An action that may be taken by the memory management subsystem.
+struct mm_action {
+    int action;
+
+    u64 address;
+
+    // Extra parameters of the action.
+    union {
+        // No extra parameters are needed.
+        u64 unused;
+
+        // How large is the huge page we are creating? This is the order (e.g. 2MB would be 9)
+        u64 huge_page_order;
+
+        // How many pages are prezeroed?
+        u64 prezero_n;
+
+        // What is the length of a memory region
+        u64 len;
+    };
+};
+
 /*
  * On entry, we hold either the VMA lock or the mmap_lock
  * (FAULT_FLAG_VMA_LOCK tells you which).  If VM_FAULT_RETRY is set in
@@ -5874,9 +5918,18 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 	if (!vmf.pud)
 		return VM_FAULT_OOM;
 retry_pud:
+	// PROTOGENS!!!!!!!!!!!!!!!! (This is a marker so I know where I am supposed to be)
 	if (pud_none(*vmf.pud) &&
 	    thp_vma_allowable_order(vma, vm_flags,
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER)) {
+
+		// here we go
+		struct mm_action mm_action;
+		struct mm_cost_delta mm_cost_delta;
+
+		mm_action.address = address;
+		mm_action.action = 1; // MM_ACTION_PROMOTE_HUGE
+		mm_action.huge_page_order = HPAGE_PUD_SHIFT-PAGE_SHIFT;
 		/*
 		ret = create_huge_pud(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
