@@ -5877,9 +5877,11 @@ retry_pud:
 	if (pud_none(*vmf.pud) &&
 	    thp_vma_allowable_order(vma, vm_flags,
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER)) {
+		/*
 		ret = create_huge_pud(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
 			return ret;
+		*/
 	} else {
 		pud_t orig_pud = *vmf.pud;
 
