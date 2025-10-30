@@ -5887,6 +5887,91 @@ struct mm_action {
 };
 
 /*
+
+CBMM RECREATION - Estimation of huge page promotion
+
+*/
+
+#define HUGE_PAGE_ORDER 9
+
+/* Free memory management - zoned buddy allocator.  */
+#define MAX_ORDER 11
+
+enum free_huge_page_status {
+    fhps_none, // no free huge pages
+    fhps_free, // huge pages are available
+    fhps_zeroed, // huge pages are available and prezeroed!
+};
+
+static enum free_huge_page_status
+have_free_huge_pages(void)
+{
+    int zone_idx;
+    struct zone *zone;
+    struct page *page;
+    struct free_area *area;
+    bool is_free = false, is_zeroed = false;
+    int order;
+    unsigned long flags;
+
+    pg_data_t *pgdat = NODE_DATA(numa_node_id());
+
+    for (zone_idx = ZONE_NORMAL; zone_idx < MAX_NR_ZONES; zone_idx++) {
+        zone = &pgdat->node_zones[zone_idx];
+
+        for (order = HUGE_PAGE_ORDER; order < MAX_ORDER; ++order) {
+			/*
+            area = &(zone->free_area[order]);
+            is_free = area->nr_free > 0;
+
+            if (is_free) {
+                spin_lock_irqsave(&zone->lock, flags);
+
+                page = list_last_entry_or_null(
+                        &area->free_list[MIGRATE_MOVABLE], struct page,
+                        lru);
+                is_zeroed = page && PageZeroed(page);
+
+                spin_unlock_irqrestore(&zone->lock, flags);
+
+                if (mm_econ_debugging_mode == 1) {
+                    pr_warn("estimator: found "
+                            "free page %p node %d zone %p (%s) "
+                            "order %d prezeroed %d list %d",
+                            page, zone->zone_pgdat->node_id,
+                            zone, zone->name, order,
+                            is_zeroed, MIGRATE_MOVABLE);
+                }
+
+                goto exit;
+            }
+			*/
+        }
+	}
+
+exit:
+    return is_zeroed ? fhps_zeroed :
+        is_free ? fhps_free :
+        fhps_none;
+
+	return fhps_none;
+}
+
+void mm_estimate_huge_page_promote_cost_benefit(struct mm_action* action, struct mm_cost_delta* cost) {
+	const enum free_huge_page_status fhps = have_free_huge_pages();
+}
+
+void
+mm_estimate_changes(const struct mm_action *action, struct mm_cost_delta *cost)
+{
+	switch (action->action) {
+		case 1: // MM_PROMOTE_HUGE
+			mm_estimate_huge_page_promote_cost_benefit(action, cost);
+			break;
+	}
+}
+
+/*
  * On entry, we hold either the VMA lock or the mmap_lock
  * (FAULT_FLAG_VMA_LOCK tells you which).  If VM_FAULT_RETRY is set in
  * the result, the mmap_lock is not held on exit.  See filemap_fault()
@@ -5930,6 +6015,8 @@ retry_pud:
 		mm_action.address = address;
 		mm_action.action = 1; // MM_ACTION_PROMOTE_HUGE
 		mm_action.huge_page_order = HPAGE_PUD_SHIFT-PAGE_SHIFT;
+		
+		mm_estimate_changes(&mm_action, &mm_cost_delta);
 		/*
 		ret = create_huge_pud(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
