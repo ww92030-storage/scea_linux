@@ -5949,9 +5949,10 @@ have_free_huge_pages(void)
                         lru);
                 is_zeroed = page && PageZeroed(page);
 
-				/*
 
                 spin_unlock_irqrestore(&zone->lock, flags);
+
+				/*
 
                 if (mm_econ_debugging_mode == 1) {
                     pr_warn("estimator: found "
