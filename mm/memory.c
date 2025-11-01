@@ -5976,6 +5976,17 @@ exit:
 
 void mm_estimate_huge_page_promote_cost_benefit(struct mm_action* action, struct mm_cost_delta* cost) {
 	const enum free_huge_page_status fhps = have_free_huge_pages();
+
+	const u64 alloc_cost = fhps > fhps_none ? 0 : (1ul << 32);
+
+    // TODO: Assume constant prep costs (zeroing or copying).
+    const u64 prep_cost = fhps > fhps_free ? 0 : 100 * 2000; // ~100us
+
+    // Compute total cost.
+    cost->cost = alloc_cost + prep_cost;
+    cost->extra = fhps == fhps_zeroed;
+
+    // Estimate benefit.
 }
 
 void
