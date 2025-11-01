@@ -90,6 +90,12 @@
 #include "internal.h"
 #include "swap.h"
 
+// BEGIN CBMM SPECIFIC INCLUDES
+
+#include <linux/list.h>
+
+// END CBMM SPECIFIC INCLUDES
+
 #if defined(LAST_CPUPID_NOT_IN_PAGE_FLAGS) && !defined(CONFIG_COMPILE_TEST)
 #warning Unfortunate NUMA and NUMA Balancing config, growing page-frame for last_cpupid.
 #endif
@@ -5892,6 +5898,13 @@ CBMM RECREATION - Estimation of huge page promotion
 
 */
 
+// Toggle for everything
+static int mm_econ_mode = 0;
+
+// Turns on various debugging printks...
+int mm_econ_debugging_mode = 0;
+
+
 #define HUGE_PAGE_ORDER 9
 
 /* Free memory management - zoned buddy allocator.  */
@@ -5902,6 +5915,11 @@ enum free_huge_page_status {
     fhps_free, // huge pages are available
     fhps_zeroed, // huge pages are available and prezeroed!
 };
+
+static inline int PageZeroed(struct page *page)
+{
+	return test_bit(PG_zeroed, &page->flags);
+}
 
 static enum free_huge_page_status
 have_free_huge_pages(void)
@@ -5920,7 +5938,6 @@ have_free_huge_pages(void)
         zone = &pgdat->node_zones[zone_idx];
 
         for (order = HUGE_PAGE_ORDER; order < MAX_ORDER; ++order) {
-			/*
             area = &(zone->free_area[order]);
             is_free = area->nr_free > 0;
 
@@ -5931,6 +5948,8 @@ have_free_huge_pages(void)
                         &area->free_list[MIGRATE_MOVABLE], struct page,
                         lru);
                 is_zeroed = page && PageZeroed(page);
+
+				/*
 
                 spin_unlock_irqrestore(&zone->lock, flags);
 
@@ -5944,8 +5963,8 @@ have_free_huge_pages(void)
                 }
 
                 goto exit;
+				*/
             }
-			*/
         }
 	}
 
