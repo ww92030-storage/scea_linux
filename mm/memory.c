@@ -5902,7 +5902,7 @@ CBMM RECREATION - Estimation of huge page promotion
 static int mm_econ_mode = 0;
 
 // Turns on various debugging printks...
-int mm_econ_debugging_mode = 0;
+int mm_econ_debugging_mode = 1;
 
 
 #define HUGE_PAGE_ORDER 9
@@ -5952,8 +5952,6 @@ have_free_huge_pages(void)
 
                 spin_unlock_irqrestore(&zone->lock, flags);
 
-				/*
-
                 if (mm_econ_debugging_mode == 1) {
                     pr_warn("estimator: found "
                             "free page %p node %d zone %p (%s) "
@@ -5964,7 +5962,6 @@ have_free_huge_pages(void)
                 }
 
                 goto exit;
-				*/
             }
         }
 	}
