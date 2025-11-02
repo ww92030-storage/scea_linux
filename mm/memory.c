@@ -6050,20 +6050,18 @@ compute_hpage_benefit(const struct mm_action *action)
 
     down_read(&filter_procs_sem);
 
-	/*
     if ((proc = find_filter_proc_by_pid(current->tgid))) // NOTE: assignment
         range = profile_search(&proc->hp_ranges_root, action->address);
 
     if (range) {
-        // ret = range->benefit;
+        ret = range->benefit;
 
-        //pr_warn("mm_econ: estimating page benefit: "
-        //        "misses=%llu size=%llu per-page=%llu\n",
-        //        range->benefit,
-        //        (range->end - range->start) >> HPAGE_SHIFT,
-        //        ret);
+        pr_warn("mm_econ: estimating page benefit: "
+    	        "misses=%llu size=%llu per-page=%llu\n",
+                range->benefit,
+                (range->end - range->start) >> HPAGE_SHIFT,
+                ret);
     }
-	*/
     up_read(&filter_procs_sem);
 
     return ret;
