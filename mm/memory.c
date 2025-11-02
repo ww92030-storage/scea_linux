@@ -5898,6 +5898,25 @@ CBMM RECREATION - Estimation of huge page promotion
 
 */
 
+// A process using mmap filters
+struct mmap_filter_proc {
+    struct list_head node;
+    pid_t pid;
+    struct list_head filters;
+    struct rb_root hp_ranges_root;
+    struct rb_root eager_ranges_root;
+};
+
+// The Preloaded Profile, if any.
+struct profile_range {
+    u64 start;
+    u64 end;
+    // The benefit depends on what the profile is measuring
+    u64 benefit;
+
+    struct rb_node node;
+};
+
 // Toggle for everything
 static int mm_econ_mode = 0;
 
@@ -5974,6 +5993,82 @@ exit:
 	return fhps_none;
 }
 
+// List of processes using mmap filters
+static LIST_HEAD(filter_procs);
+static DECLARE_RWSEM(filter_procs_sem);
+
+static struct mmap_filter_proc *
+find_filter_proc_by_pid(pid_t pid)
+{
+    struct mmap_filter_proc *proc;
+    list_for_each_entry(proc, &filter_procs, node) {
+        if (proc->pid == pid) {
+            return proc;
+        }
+    }
+
+    return NULL;
+}
+
+static struct profile_range *
+profile_search(struct rb_root *ranges_root, u64 addr)
+{
+    struct rb_node *node = ranges_root->rb_node;
+
+    while (node) {
+        struct profile_range *range =
+            container_of(node, struct profile_range, node);
+
+        if (range->start <= addr && addr < range->end)
+            return range;
+
+        if (addr < range->start)
+            node = node->rb_left;
+        else
+            node = node->rb_right;
+    }
+
+    return NULL;
+}
+
+static u64
+compute_hpage_benefit(const struct mm_action *action)
+{
+	// Original cbmm:
+	/*
+    if (tlb_miss_est_fn)
+        return tlb_miss_est_fn(action);
+    else
+        return compute_hpage_benefit_from_profile(action);
+	*/
+
+	// This is a recreation of compute_hpage_benefit_from_profile(action)
+
+	u64 ret = 0;
+    struct mmap_filter_proc *proc;
+    struct profile_range *range = NULL;
+
+    down_read(&filter_procs_sem);
+
+	/*
+    if ((proc = find_filter_proc_by_pid(current->tgid))) // NOTE: assignment
+        range = profile_search(&proc->hp_ranges_root, action->address);
+
+    if (range) {
+        // ret = range->benefit;
+
+        //pr_warn("mm_econ: estimating page benefit: "
+        //        "misses=%llu size=%llu per-page=%llu\n",
+        //        range->benefit,
+        //        (range->end - range->start) >> HPAGE_SHIFT,
+        //        ret);
+    }
+	*/
+    up_read(&filter_procs_sem);
+
+    return ret;
+}
+
 void mm_estimate_huge_page_promote_cost_benefit(struct mm_action* action, struct mm_cost_delta* cost) {
 	const enum free_huge_page_status fhps = have_free_huge_pages();
 
@@ -5987,6 +6082,7 @@ void mm_estimate_huge_page_promote_cost_benefit(struct mm_action* action, struct
     cost->extra = fhps == fhps_zeroed;
 
     // Estimate benefit.
+	cost->benefit = compute_hpage_benefit(action);
 }
 
 void
