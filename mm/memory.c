@@ -90,6 +90,12 @@
 #include "internal.h"
 #include "swap.h"
 
+// BEGIN CBMM SPECIFIC INCLUDES
+
+#include <linux/list.h>
+
+// END CBMM SPECIFIC INCLUDES
+
 #if defined(LAST_CPUPID_NOT_IN_PAGE_FLAGS) && !defined(CONFIG_COMPILE_TEST)
 #warning Unfortunate NUMA and NUMA Balancing config, growing page-frame for last_cpupid.
 #endif
@@ -5892,6 +5898,32 @@ CBMM RECREATION - Estimation of huge page promotion
 
 */
 
+// A process using mmap filters
+struct mmap_filter_proc {
+    struct list_head node;
+    pid_t pid;
+    struct list_head filters;
+    struct rb_root hp_ranges_root;
+    struct rb_root eager_ranges_root;
+};
+
+// The Preloaded Profile, if any.
+struct profile_range {
+    u64 start;
+    u64 end;
+    // The benefit depends on what the profile is measuring
+    u64 benefit;
+
+    struct rb_node node;
+};
+
+// Toggle for everything
+static int mm_econ_mode = 0;
+
+// Turns on various debugging printks...
+int mm_econ_debugging_mode = 1;
+
+
 #define HUGE_PAGE_ORDER 9
 
 /* Free memory management - zoned buddy allocator.  */
@@ -5902,6 +5934,11 @@ enum free_huge_page_status {
     fhps_free, // huge pages are available
     fhps_zeroed, // huge pages are available and prezeroed!
 };
+
+static inline int PageZeroed(struct page *page)
+{
+	return test_bit(PG_zeroed, &page->flags);
+}
 
 static enum free_huge_page_status
 have_free_huge_pages(void)
@@ -5920,7 +5957,6 @@ have_free_huge_pages(void)
         zone = &pgdat->node_zones[zone_idx];
 
         for (order = HUGE_PAGE_ORDER; order < MAX_ORDER; ++order) {
-			/*
             area = &(zone->free_area[order]);
             is_free = area->nr_free > 0;
 
@@ -5931,6 +5967,7 @@ have_free_huge_pages(void)
                         &area->free_list[MIGRATE_MOVABLE], struct page,
                         lru);
                 is_zeroed = page && PageZeroed(page);
+
 
                 spin_unlock_irqrestore(&zone->lock, flags);
 
@@ -5945,7 +5982,6 @@ have_free_huge_pages(void)
 
                 goto exit;
             }
-			*/
         }
 	}
 
@@ -5957,8 +5993,94 @@ exit:
 	return fhps_none;
 }
 
+// List of processes using mmap filters
+static LIST_HEAD(filter_procs);
+static DECLARE_RWSEM(filter_procs_sem);
+
+static struct mmap_filter_proc *
+find_filter_proc_by_pid(pid_t pid)
+{
+    struct mmap_filter_proc *proc;
+    list_for_each_entry(proc, &filter_procs, node) {
+        if (proc->pid == pid) {
+            return proc;
+        }
+    }
+
+    return NULL;
+}
+
+static struct profile_range *
+profile_search(struct rb_root *ranges_root, u64 addr)
+{
+    struct rb_node *node = ranges_root->rb_node;
+
+    while (node) {
+        struct profile_range *range =
+            container_of(node, struct profile_range, node);
+
+        if (range->start <= addr && addr < range->end)
+            return range;
+
+        if (addr < range->start)
+            node = node->rb_left;
+        else
+            node = node->rb_right;
+    }
+
+    return NULL;
+}
+
+static u64
+compute_hpage_benefit(const struct mm_action *action)
+{
+	// Original cbmm:
+	/*
+    if (tlb_miss_est_fn)
+        return tlb_miss_est_fn(action);
+    else
+        return compute_hpage_benefit_from_profile(action);
+	*/
+
+	// This is a recreation of compute_hpage_benefit_from_profile(action)
+
+	u64 ret = 0;
+    struct mmap_filter_proc *proc;
+    struct profile_range *range = NULL;
+
+    down_read(&filter_procs_sem);
+
+    if ((proc = find_filter_proc_by_pid(current->tgid))) // NOTE: assignment
+        range = profile_search(&proc->hp_ranges_root, action->address);
+
+    if (range) {
+        ret = range->benefit;
+
+        pr_warn("mm_econ: estimating page benefit: "
+    	        "misses=%llu size=%llu per-page=%llu\n",
+                range->benefit,
+                (range->end - range->start) >> HPAGE_SHIFT,
+                ret);
+    }
+    up_read(&filter_procs_sem);
+
+    return ret;
+}
+
 void mm_estimate_huge_page_promote_cost_benefit(struct mm_action* action, struct mm_cost_delta* cost) {
 	const enum free_huge_page_status fhps = have_free_huge_pages();
+
+	const u64 alloc_cost = fhps > fhps_none ? 0 : (1ul << 32);
+
+    // TODO: Assume constant prep costs (zeroing or copying).
+    const u64 prep_cost = fhps > fhps_free ? 0 : 100 * 2000; // ~100us
+
+    // Compute total cost.
+    cost->cost = alloc_cost + prep_cost;
+    cost->extra = fhps == fhps_zeroed;
+
+    // Estimate benefit.
+	cost->benefit = compute_hpage_benefit(action);
 }
 
 void
@@ -5969,6 +6091,10 @@ mm_estimate_changes(const struct mm_action *action, struct mm_cost_delta *cost)
 			mm_estimate_huge_page_promote_cost_benefit(action, cost);
 			break;
 	}
+}
+
+bool mm_decide(struct mm_cost_delta* cost) {
+	return cost->cost < cost->benefit;
 }
 
 /*
@@ -6017,6 +6143,13 @@ retry_pud:
 		mm_action.huge_page_order = HPAGE_PUD_SHIFT-PAGE_SHIFT;
 		
 		mm_estimate_changes(&mm_action, &mm_cost_delta);
+
+		bool should_do = mm_decide(&mm_cost_delta);
+
+		if (should_do) {
+			ret = create_huge_pud(&vmf);
+			if (!(ret & VM_FAULT_FALLBACK)) return ret;
+		}
 		/*
 		ret = create_huge_pud(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
