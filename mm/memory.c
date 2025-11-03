@@ -6093,6 +6093,10 @@ mm_estimate_changes(const struct mm_action *action, struct mm_cost_delta *cost)
 	}
 }
 
+bool mm_decide(struct mm_cost_delta* cost) {
+	return cost->cost < cost->benefit;
+}
+
 /*
  * On entry, we hold either the VMA lock or the mmap_lock
  * (FAULT_FLAG_VMA_LOCK tells you which).  If VM_FAULT_RETRY is set in
@@ -6139,6 +6143,13 @@ retry_pud:
 		mm_action.huge_page_order = HPAGE_PUD_SHIFT-PAGE_SHIFT;
 		
 		mm_estimate_changes(&mm_action, &mm_cost_delta);
+
+		should_do = mm_decide(&mm_cost_delta);
+
+		if (should_do) {
+			ret = create_huge_pud(&vmf);
+			if (!(ret & VM_FAULT_FALLBACK)) return ret;
+		}
 		/*
 		ret = create_huge_pud(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
