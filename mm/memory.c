@@ -6144,7 +6144,7 @@ retry_pud:
 		
 		mm_estimate_changes(&mm_action, &mm_cost_delta);
 
-		should_do = mm_decide(&mm_cost_delta);
+		bool should_do = mm_decide(&mm_cost_delta);
 
 		if (should_do) {
 			ret = create_huge_pud(&vmf);
