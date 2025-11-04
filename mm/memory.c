@@ -6097,6 +6097,10 @@ bool mm_decide(struct mm_cost_delta* cost) {
 	return cost->cost < cost->benefit;
 }
 
+EXPORT_SYMBOL(mm_estimate_changes);
+
+EXPORT_SYMBOL(mm_decide);
+
 /*
  * On entry, we hold either the VMA lock or the mmap_lock
  * (FAULT_FLAG_VMA_LOCK tells you which).  If VM_FAULT_RETRY is set in
