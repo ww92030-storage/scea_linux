@@ -6138,12 +6138,10 @@ retry_pud:
 
 	if (pud_none(*vmf.pud)) {
     		printk("DEBUG: pud_none OK, vaddr=%px\n", (void*)vmf.address);
-	} else {
-    		printk("DEBUG: pud is NOT none\n");
 	}
 
-if (!ok_pud) {
-    printk("DEBUG: thp_vma_allowable_order(PUD) returned FALSE\n");
+if (ok_pud) {
+    printk("DEBUG: thp_vma_allowable_order(PUD) returned TRUE\n");
 }
 	
 	if (pud_none(*vmf.pud) && ok_pud) {
