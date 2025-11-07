@@ -6133,10 +6133,20 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 	if (!vmf.pud)
 		return VM_FAULT_OOM;
 retry_pud:
+	bool ok_pud = thp_vma_allowable_order(vma, vm_flags, TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER);
 	// PROTOGENS!!!!!!!!!!!!!!!! (This is a marker so I know where I am supposed to be)
-	if (pud_none(*vmf.pud) &&
-	    thp_vma_allowable_order(vma, vm_flags,
-				TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER)) {
+
+	if (pud_none(*vmf.pud)) {
+    		printk("DEBUG: pud_none OK, vaddr=%px\n", (void*)vmf.address);
+	} else {
+    		printk("DEBUG: pud is NOT none\n");
+	}
+
+if (!ok_pud) {
+    printk("DEBUG: thp_vma_allowable_order(PUD) returned FALSE\n");
+}
+	
+	if (pud_none(*vmf.pud) && ok_pud) {
 		
 		printk("BEGIN ESTIMATION STEP");
 
