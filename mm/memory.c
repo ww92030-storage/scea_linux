@@ -6138,6 +6138,7 @@ retry_pud:
 
 	if (pud_none(*vmf.pud)) {
     		printk("DEBUG: pud_none OK, vaddr=%px\n", (void*)vmf.address);
+			printk("DEBUG: vma %px, vm_flags %lx, tva %lx, order %ux\n", vma, vm_flags, TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER);
 	}
 
 if (ok_pud) {
