@@ -6205,6 +6205,22 @@ if (ok_pud) {
 
 		printk("BEGIN ESTIMATION STEP (PMD)");
 
+		struct mm_action mm_action;
+		struct mm_cost_delta mm_cost_delta;
+
+		mm_action.address = address;
+		mm_action.action = 1; // MM_ACTION_PROMOTE_HUGE
+		mm_action.huge_page_order = (HPAGE_PMD_SHIFT-PAGE_SHIFT); // HPAGE_PMD_ORDER;
+		
+		mm_estimate_changes(&mm_action, &mm_cost_delta);
+
+		bool should_do = mm_decide(&mm_cost_delta);
+
+		if (should_do) {
+			ret = create_huge_pmd(&vmf);
+			if (!(ret & VM_FAULT_FALLBACK)) return ret;
+		}
+
 		/*
 		ret = create_huge_pmd(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
