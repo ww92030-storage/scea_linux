@@ -6137,12 +6137,12 @@ retry_pud:
 	// PROTOGENS!!!!!!!!!!!!!!!! (This is a marker so I know where I am supposed to be)
 
 	if (pud_none(*vmf.pud)) {
-    		printk("DEBUG: pud_none OK, vaddr=%px\n", (void*)vmf.address);
-			printk("DEBUG: vma %px, vm_flags %lx, tva %lx, order %ux\n", vma, vm_flags, TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER);
+    		// printk("DEBUG: pud_none OK, vaddr=%px\n", (void*)vmf.address);
+			// printk("DEBUG: vma %px, vm_flags %lx, tva %lx, order %ux\n", vma, vm_flags, TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER);
 	}
 
 if (ok_pud) {
-    printk("DEBUG: thp_vma_allowable_order(PUD) returned TRUE\n");
+    // printk("DEBUG: thp_vma_allowable_order(PUD) returned TRUE\n");
 }
 	
 	if (pud_none(*vmf.pud) && ok_pud) {
