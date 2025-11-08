@@ -6147,7 +6147,7 @@ if (ok_pud) {
 	
 	if (pud_none(*vmf.pud) && ok_pud) {
 		
-		printk("BEGIN ESTIMATION STEP");
+		printk("BEGIN ESTIMATION STEP (PUD)");
 
 		// here we go
 		struct mm_action mm_action;
@@ -6202,9 +6202,14 @@ if (ok_pud) {
 	if (pmd_none(*vmf.pmd) &&
 	    thp_vma_allowable_order(vma, vm_flags,
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PMD_ORDER)) {
+
+		printk("BEGIN ESTIMATION STEP (PMD)");
+
+		/*
 		ret = create_huge_pmd(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
 			return ret;
+		*/
 	} else {
 		vmf.orig_pmd = pmdp_get_lockless(vmf.pmd);
 
