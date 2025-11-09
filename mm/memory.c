@@ -6044,7 +6044,7 @@ compute_hpage_benefit(const struct mm_action *action)
 
 	// This is a recreation of compute_hpage_benefit_from_profile(action)
 
-	u64 ret = 0;
+	u64 ret = 3435965; // value taken from a cbmm profile
     struct mmap_filter_proc *proc;
     struct profile_range *range = NULL;
 
@@ -6052,6 +6052,7 @@ compute_hpage_benefit(const struct mm_action *action)
 
     if ((proc = find_filter_proc_by_pid(current->tgid))) // NOTE: assignment
         range = profile_search(&proc->hp_ranges_root, action->address);
+	else printk("PROC (%lu) IS NOT find_filter_proc_by_pid(%lu)\n", proc, current->tgid);
 
     if (range) {
         ret = range->benefit;
@@ -6215,7 +6216,7 @@ if (ok_pud) {
 		mm_estimate_changes(&mm_action, &mm_cost_delta);
 
 		bool should_do = mm_decide(&mm_cost_delta);
-		if (mm_cost_delta.cost != 2000000) {
+		if (mm_cost_delta.cost != 200000) {
 			printk("PMD: EST RES C:%lu B:%lu\n", mm_cost_delta.cost, mm_cost_delta.benefit);
 			printk("PMD: SHOULD_DO %d\n", should_do);
 		}
