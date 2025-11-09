@@ -6203,7 +6203,7 @@ if (ok_pud) {
 	    thp_vma_allowable_order(vma, vm_flags,
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PMD_ORDER)) {
 
-		printk("BEGIN ESTIMATION STEP (PMD)");
+		// printk("BEGIN ESTIMATION STEP (PMD)");
 
 		struct mm_action mm_action;
 		struct mm_cost_delta mm_cost_delta;
@@ -6215,6 +6215,11 @@ if (ok_pud) {
 		mm_estimate_changes(&mm_action, &mm_cost_delta);
 
 		bool should_do = mm_decide(&mm_cost_delta);
+		if (mm_cost_delta.cost != 2000000) {
+			printk("PMD: EST RES C:%lu B:%lu\n", mm_cost_delta.cost, mm_cost_delta.benefit);
+			printk("PMD: SHOULD_DO %d\n", should_do);
+		}
+		
 
 		if (should_do) {
 			ret = create_huge_pmd(&vmf);
