@@ -6133,10 +6133,21 @@ static vm_fault_t __handle_mm_fault(struct vm_area_struct *vma,
 	if (!vmf.pud)
 		return VM_FAULT_OOM;
 retry_pud:
+	bool ok_pud = thp_vma_allowable_order(vma, vm_flags, TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER);
 	// PROTOGENS!!!!!!!!!!!!!!!! (This is a marker so I know where I am supposed to be)
-	if (pud_none(*vmf.pud) &&
-	    thp_vma_allowable_order(vma, vm_flags,
-				TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER)) {
+
+	if (pud_none(*vmf.pud)) {
+    		// printk("DEBUG: pud_none OK, vaddr=%px\n", (void*)vmf.address);
+			// printk("DEBUG: vma %px, vm_flags %lx, tva %lx, order %ux\n", vma, vm_flags, TVA_IN_PF | TVA_ENFORCE_SYSFS, PUD_ORDER);
+	}
+
+if (ok_pud) {
+    // printk("DEBUG: thp_vma_allowable_order(PUD) returned TRUE\n");
+}
+	
+	if (pud_none(*vmf.pud) && ok_pud) {
+		
+		printk("BEGIN ESTIMATION STEP (PUD)");
 
 		// here we go
 		struct mm_action mm_action;
@@ -6191,9 +6202,35 @@ retry_pud:
 	if (pmd_none(*vmf.pmd) &&
 	    thp_vma_allowable_order(vma, vm_flags,
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PMD_ORDER)) {
+
+		// printk("BEGIN ESTIMATION STEP (PMD)");
+
+		struct mm_action mm_action;
+		struct mm_cost_delta mm_cost_delta;
+
+		mm_action.address = address;
+		mm_action.action = 1; // MM_ACTION_PROMOTE_HUGE
+		mm_action.huge_page_order = (HPAGE_PMD_SHIFT-PAGE_SHIFT); // HPAGE_PMD_ORDER;
+		
+		mm_estimate_changes(&mm_action, &mm_cost_delta);
+
+		bool should_do = mm_decide(&mm_cost_delta);
+		if (mm_cost_delta.cost != 2000000) {
+			printk("PMD: EST RES C:%lu B:%lu\n", mm_cost_delta.cost, mm_cost_delta.benefit);
+			printk("PMD: SHOULD_DO %d\n", should_do);
+		}
+		
+
+		if (should_do) {
+			ret = create_huge_pmd(&vmf);
+			if (!(ret & VM_FAULT_FALLBACK)) return ret;
+		}
+
+		/*
 		ret = create_huge_pmd(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
 			return ret;
+		*/
 	} else {
 		vmf.orig_pmd = pmdp_get_lockless(vmf.pmd);
 
