@@ -6052,7 +6052,7 @@ compute_hpage_benefit(const struct mm_action *action)
 
     if ((proc = find_filter_proc_by_pid(current->tgid))) // NOTE: assignment
         range = profile_search(&proc->hp_ranges_root, action->address);
-	else printk("PROC (%lu) IS NOT find_filter_proc_by_pid(%lu)\n", proc, current->tgid);
+	else printk("PROC (%lu) IS NOT find_filter_proc_by_pid(%lu) : %lu\n", proc, current->tgid, find_filter_proc_by_pid(current->tgid));
 
     if (range) {
         ret = range->benefit;
