@@ -6031,6 +6031,8 @@ profile_search(struct rb_root *ranges_root, u64 addr)
     return NULL;
 }
 
+// This is a relic from cbmm that will be replaced by eBPF (hopefully).
+
 static u64
 compute_hpage_benefit(const struct mm_action *action)
 {
