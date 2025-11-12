@@ -6033,7 +6033,7 @@ profile_search(struct rb_root *ranges_root, u64 addr)
 
 // This is a relic from cbmm that will be replaced by eBPF (hopefully).
 
-static u64
+u64
 compute_hpage_benefit(const struct mm_action *action)
 {
 	// Original cbmm:
@@ -6069,6 +6069,8 @@ compute_hpage_benefit(const struct mm_action *action)
 
     return ret;
 }
+
+EXPORT_SYMBOL(compute_hpage_benefit);
 
 void mm_estimate_huge_page_promote_cost_benefit(struct mm_action* action, struct mm_cost_delta* cost) {
 	const enum free_huge_page_status fhps = have_free_huge_pages();
@@ -6150,7 +6152,7 @@ if (ok_pud) {
 	
 	if (pud_none(*vmf.pud) && ok_pud) {
 		
-		printk("BEGIN ESTIMATION STEP (PUD)");
+		printk("PUD: BEGIN ESTIMATION STEP (PUD)");
 
 		// here we go
 		struct mm_action mm_action;
@@ -6206,7 +6208,7 @@ if (ok_pud) {
 	    thp_vma_allowable_order(vma, vm_flags,
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PMD_ORDER)) {
 
-		// printk("BEGIN ESTIMATION STEP (PMD)");
+		printk("PMD: BEGIN ESTIMATION STEP (PMD)");
 
 		struct mm_action mm_action;
 		struct mm_cost_delta mm_cost_delta;
