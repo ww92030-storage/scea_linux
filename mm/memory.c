@@ -6033,7 +6033,7 @@ profile_search(struct rb_root *ranges_root, u64 addr)
 
 // This is a relic from cbmm that will be replaced by eBPF (hopefully).
 
-u64 noinline __attribute__((no_instrument_function)) compute_hpage_benefit(const struct mm_action *action)
+u64 noinline compute_hpage_benefit(const struct mm_action *action)
 {
 	// Original cbmm:
 	/*
