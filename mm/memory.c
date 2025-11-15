@@ -6105,6 +6105,17 @@ EXPORT_SYMBOL(mm_estimate_changes);
 
 EXPORT_SYMBOL(mm_decide);
 
+// Drawing Furries (another marker)
+
+u64 SHARED_VALUE = 0;
+
+void noinline SET_VALUE(u64 val) {
+	SHARED_VALUE = val;
+}
+
+EXPORT_SYMBOL(SHARED_VALUE);
+EXPORT_SYMBOL(SET_VALUE);
+
 /*
  * On entry, we hold either the VMA lock or the mmap_lock
  * (FAULT_FLAG_VMA_LOCK tells you which).  If VM_FAULT_RETRY is set in
@@ -6208,6 +6219,8 @@ if (ok_pud) {
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PMD_ORDER)) {
 
 		if (mm_econ_debugging_mode == 1) printk("PMD: BEGIN ESTIMATION STEP (PMD)");
+
+		printk("SHARED VALUE: %llu\n", SHARED_VALUE);
 
 		struct mm_action mm_action;
 		struct mm_cost_delta mm_cost_delta;
