@@ -6207,7 +6207,7 @@ if (ok_pud) {
 	    thp_vma_allowable_order(vma, vm_flags,
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PMD_ORDER)) {
 
-		if (mm_econ_debugging_mode = 1) printk("PMD: BEGIN ESTIMATION STEP (PMD)");
+		if (mm_econ_debugging_mode == 1) printk("PMD: BEGIN ESTIMATION STEP (PMD)");
 
 		struct mm_action mm_action;
 		struct mm_cost_delta mm_cost_delta;
