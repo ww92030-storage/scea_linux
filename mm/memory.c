@@ -5921,7 +5921,7 @@ struct profile_range {
 static int mm_econ_mode = 0;
 
 // Turns on various debugging printks...
-int mm_econ_debugging_mode = 1;
+int mm_econ_debugging_mode = 0;
 
 
 #define HUGE_PAGE_ORDER 9
@@ -6207,7 +6207,7 @@ if (ok_pud) {
 	    thp_vma_allowable_order(vma, vm_flags,
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PMD_ORDER)) {
 
-		printk("PMD: BEGIN ESTIMATION STEP (PMD)");
+		if (mm_econ_debugging_mode = 1) printk("PMD: BEGIN ESTIMATION STEP (PMD)");
 
 		struct mm_action mm_action;
 		struct mm_cost_delta mm_cost_delta;
@@ -6220,8 +6220,10 @@ if (ok_pud) {
 
 		bool should_do = mm_decide(&mm_cost_delta);
 		if (mm_cost_delta.cost != 200000) {
-			printk("PMD: EST RES C:%lu B:%lu\n", mm_cost_delta.cost, mm_cost_delta.benefit);
-			printk("PMD: SHOULD_DO %d\n", should_do);
+			if (mm_econ_debugging_mode == 1) {
+				printk("PMD: EST RES C:%lu B:%lu\n", mm_cost_delta.cost, mm_cost_delta.benefit);
+				printk("PMD: SHOULD_DO %d\n", should_do);
+			}
 		}
 		
 
