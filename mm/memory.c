@@ -6081,6 +6081,7 @@ u64 noinline compute_hpage_benefit(const struct mm_action *action)
 			return BENEFITS[i];
 		}
 	}
+	// printk("ADDR %llu NOT IN RANGE - RETURN DEFAULT\n", addr);
 	return 0;
 }
 
