@@ -6062,8 +6062,8 @@ EXPORT_SYMBOL(SET_STARTS);
 EXPORT_SYMBOL(SET_ENDS);
 EXPORT_SYMBOL(SET_BENEFITS);
 
-
-inline void init_values() {
+// https://github.com/multifacet/cbmm-artifact/blob/main/profiles/memcached-just-huge.csv
+void init_values(void) {
 	STARTS[0] = 0x7fd527600000;
 	ENDS[0] = 0x7ffff3600000;
 	BENEFITS[0] = 2509876;
@@ -6075,8 +6075,11 @@ inline void init_values() {
 u64 noinline compute_hpage_benefit(const struct mm_action *action)
 {
 	u64 addr = action->address;
-	for (u64 i = 0; u64 < PROFILE_SIZE; i++) {
-		if (addr >= STARTS[i] && addr < ENDS[i]) return BENEFITS[i];
+	for (u64 i = 0; i < PROFILE_SIZE; i++) {
+		if (addr >= STARTS[i] && addr < ENDS[i]) {
+			printk("ADDR: %llu | RANGE: [%llu, %llu) | B: %llu\n", addr, STARTS[i], ENDS[i], BENEFITS[i]);
+			return BENEFITS[i];
+		}
 	}
 	return 0;
 }
@@ -6219,8 +6222,6 @@ if (ok_pud) {
 				TVA_IN_PF | TVA_ENFORCE_SYSFS, PMD_ORDER)) {
 
 		if (mm_econ_debugging_mode == 1) printk("PMD: BEGIN ESTIMATION STEP (PMD)");
-
-		printk("SHARED VALUE: %llu\n", SHARED_VALUE);
 
 		struct mm_action mm_action;
 		struct mm_cost_delta mm_cost_delta;
