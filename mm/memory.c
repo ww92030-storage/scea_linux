@@ -6031,42 +6031,54 @@ profile_search(struct rb_root *ranges_root, u64 addr)
     return NULL;
 }
 
-// This is a relic from cbmm that will be replaced by eBPF (hopefully).
+// This is a relic from cbmm that will be replaced by eBPF (hopefully) using the array.
+
+// Drawing Furries (another marker)
+
+#define PROFILE_MAXLEN 1024
+
+u64 PROFILE_SIZE = 0;
+
+u64 STARTS[PROFILE_MAXLEN] = {0};
+u64 ENDS[PROFILE_MAXLEN] = {0};
+u64 BENEFITS[PROFILE_MAXLEN] = {0};
+
+EXPORT_SYMBOL(STARTS);
+EXPORT_SYMBOL(ENDS);
+EXPORT_SYMBOL(BENEFITS);
+EXPORT_SYMBOL(PROFILE_SIZE);
+
+void noinline SET_STARTS(u64 index, u64 val) {
+	STARTS[index] = val;
+}
+void noinline SET_ENDS(u64 index, u64 val) {
+	STARTS[index] = val;
+}
+void noinline SET_BENEFITS(u64 index, u64 val) {
+	STARTS[index] = val;
+}
+
+EXPORT_SYMBOL(SET_STARTS);
+EXPORT_SYMBOL(SET_ENDS);
+EXPORT_SYMBOL(SET_BENEFITS);
+
+
+inline void init_values() {
+	STARTS[0] = 0x7fd527600000;
+	ENDS[0] = 0x7ffff3600000;
+	BENEFITS[0] = 2509876;
+
+	PROFILE_SIZE = 1;
+}
+
 
 u64 noinline compute_hpage_benefit(const struct mm_action *action)
 {
-	// Original cbmm:
-	/*
-    if (tlb_miss_est_fn)
-        return tlb_miss_est_fn(action);
-    else
-        return compute_hpage_benefit_from_profile(action);
-	*/
-
-	// This is a recreation of compute_hpage_benefit_from_profile(action)
-
-	u64 ret = 3435965; // value taken from a cbmm profile
-    struct mmap_filter_proc *proc;
-    struct profile_range *range = NULL;
-
-    down_read(&filter_procs_sem);
-
-    if ((proc = find_filter_proc_by_pid(current->tgid))) // NOTE: assignment
-        range = profile_search(&proc->hp_ranges_root, action->address);
-	// else printk("PROC (%lu) IS NOT find_filter_proc_by_pid(%lu) : %lu\n", proc, current->tgid, find_filter_proc_by_pid(current->tgid));
-
-    if (range) {
-        ret = range->benefit;
-
-        pr_warn("mm_econ: estimating page benefit: "
-    	        "misses=%llu size=%llu per-page=%llu\n",
-                range->benefit,
-                (range->end - range->start) >> HPAGE_SHIFT,
-                ret);
-    }
-    up_read(&filter_procs_sem);
-
-    return ret;
+	u64 addr = action->address;
+	for (u64 i = 0; u64 < PROFILE_SIZE; i++) {
+		if (addr >= STARTS[i] && addr < ENDS[i]) return BENEFITS[i];
+	}
+	return 0;
 }
 
 EXPORT_SYMBOL(compute_hpage_benefit);
@@ -6104,18 +6116,6 @@ bool mm_decide(struct mm_cost_delta* cost) {
 EXPORT_SYMBOL(mm_estimate_changes);
 
 EXPORT_SYMBOL(mm_decide);
-
-// Drawing Furries (another marker)
-
-u64 SHARED_VALUE = 0;
-
-void noinline SET_VALUE(u64 val) {
-	SHARED_VALUE = val;
-}
-
-EXPORT_SYMBOL(SHARED_VALUE);
-EXPORT_SYMBOL(SET_VALUE);
-
 /*
  * On entry, we hold either the VMA lock or the mmap_lock
  * (FAULT_FLAG_VMA_LOCK tells you which).  If VM_FAULT_RETRY is set in
