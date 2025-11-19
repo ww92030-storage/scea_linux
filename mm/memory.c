@@ -6052,10 +6052,10 @@ void noinline SET_STARTS(u64 index, u64 val) {
 	STARTS[index] = val;
 }
 void noinline SET_ENDS(u64 index, u64 val) {
-	STARTS[index] = val;
+	ENDS[index] = val;
 }
 void noinline SET_BENEFITS(u64 index, u64 val) {
-	STARTS[index] = val;
+	BENEFITS[index] = val;
 }
 
 EXPORT_SYMBOL(SET_STARTS);
@@ -6256,7 +6256,7 @@ u64 noinline compute_hpage_benefit(const struct mm_action *action)
 	u64 addr = action->address;
 	for (u64 i = 0; i < PROFILE_SIZE; i++) {
 		if (addr >= STARTS[i] && addr < ENDS[i]) {
-			printk("ADDR: %llu | RANGE: [%llu, %llu) | B: %llu\n", addr, STARTS[i], ENDS[i], BENEFITS[i]);
+			// printk("ADDR: %llu | RANGE: [%llu, %llu) | B: %llu\n", addr, STARTS[i], ENDS[i], BENEFITS[i]);
 			return BENEFITS[i];
 		}
 	}
@@ -6422,6 +6422,7 @@ if (ok_pud) {
 		
 
 		if (should_do) {
+			printk("PROMOTED PAGE AT %lld [C|B][%lld | %lld]\n", mm_action.address, mm_cost_delta.cost, mm_cost_delta.benefit);
 			ret = create_huge_pmd(&vmf);
 			if (!(ret & VM_FAULT_FALLBACK)) return ret;
 		}
