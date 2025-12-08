@@ -6033,7 +6033,20 @@ profile_search(struct rb_root *ranges_root, u64 addr)
 
 // This is a relic from cbmm that will be replaced by eBPF (hopefully) using the array.
 
-// Drawing Furries (another marker)
+// BEGIN PROFILE DETAILS
+
+// 0. Should we estimate
+
+bool DO_PMD_ESTIMATE = true;
+
+void noinline SET_DO_PMD_ESTIMATE(bool val) {
+	DO_PMD_ESTIMATE = val;
+}
+
+EXPORT_SYMBOL(DO_PMD_ESTIMATE);
+EXPORT_SYMBOL(SET_DO_PMD_ESTIMATE);
+
+// 1. Array implementation
 
 #define PROFILE_MAXLEN 1024
 
@@ -6062,7 +6075,76 @@ EXPORT_SYMBOL(SET_STARTS);
 EXPORT_SYMBOL(SET_ENDS);
 EXPORT_SYMBOL(SET_BENEFITS);
 
+// 2. Interval tree (RB tree???) https://docs.kernel.org/core-api/rbtree.html
+// The intervals are strictly disjoint and partitioning so we don't need to do a fancy interval tree with overlaps.
+
+struct interval_profile {
+	u64 start; // primary key
+	u64 end;
+	struct rb_node interval_rb_node;
+};
+
+struct rb_root intervals_root = RB_ROOT;
+
+struct interval_profile* interval_search(struct rb_root* root, u64 start) {
+      struct rb_node *node = root->rb_node;
+
+      while (node) {
+              struct interval_profile* data = container_of(node, struct interval_profile, interval_rb_node);
+              int result;
+
+              result = start - data->start;
+
+              if (result < 0)
+                      node = node->rb_left;
+              else if (result > 0)
+                      node = node->rb_right;
+              else
+                      return data;
+      }
+ 
+	  return NULL;
+}
+
+int interval_insert(struct rb_root *root, struct interval_profile *data)
+{
+      struct rb_node **new = &(root->rb_node), *parent = NULL;
+
+      /* Figure out where to put new node */
+      while (*new) {
+              struct interval_profile *this = container_of(*new, struct interval_profile, interval_rb_node);
+              int result = data->start - this->start;
+
+              parent = *new;
+              if (result < 0)
+                      new = &((*new)->rb_left);
+              else if (result > 0)
+                      new = &((*new)->rb_right);
+              else
+                      return 0;
+      }
+
+      /* Add new node and rebalance tree. */
+      rb_link_node(&data->interval_rb_node, parent, new);
+      rb_insert_color(&data->interval_rb_node, root);
+
+      return 1;
+}
+
+void interval_remove(struct rb_root* root, u64 start) {
+	struct interval_profile *data = interval_search(&intervals_root, start);
+
+	if (data) {
+      rb_erase(&data->interval_rb_node, &intervals_root);
+      kfree(data);
+	}
+
+}
+
+
 bool HAS_INIT = false;
+
+
 
 // 0 - https://github.com/multifacet/cbmm-artifact/blob/main/profiles/mongodb-just-huge.csv
 // 1 - https://github.com/multifacet/cbmm-artifact/blob/main/profiles/memcached-just-huge.csv
@@ -6248,6 +6330,8 @@ void init_values(void) {
 	PROFILE_SIZE = 58;
 }
 
+// END PROFILE DETAILS
+
 
 
 u64 noinline compute_hpage_benefit(const struct mm_action *action)
@@ -6403,6 +6487,8 @@ if (ok_pud) {
 
 		if (mm_econ_debugging_mode == 1) printk("PMD: BEGIN ESTIMATION STEP (PMD)");
 
+		if (DO_PMD_ESTIMATE) {
+
 		struct mm_action mm_action;
 		struct mm_cost_delta mm_cost_delta;
 
@@ -6427,11 +6513,13 @@ if (ok_pud) {
 			if (!(ret & VM_FAULT_FALLBACK)) return ret;
 		}
 
-		/*
+		} else {
+
 		ret = create_huge_pmd(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
 			return ret;
-		*/
+
+		}
 	} else {
 		vmf.orig_pmd = pmdp_get_lockless(vmf.pmd);
 
