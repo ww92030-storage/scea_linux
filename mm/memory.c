@@ -6037,9 +6037,9 @@ profile_search(struct rb_root *ranges_root, u64 addr)
 
 // 0. Should we estimate
 
-bool DO_PMD_ESTIMATE = true;
+u64 DO_PMD_ESTIMATE = true;
 
-void noinline SET_DO_PMD_ESTIMATE(bool val) {
+void noinline SET_DO_PMD_ESTIMATE(u64 val) {
 	DO_PMD_ESTIMATE = val;
 }
 
@@ -6487,7 +6487,7 @@ if (ok_pud) {
 
 		if (mm_econ_debugging_mode == 1) printk("PMD: BEGIN ESTIMATION STEP (PMD)");
 
-		if (DO_PMD_ESTIMATE) {
+		if (DO_PMD_ESTIMATE == 1) { // BEGIN ESTIMATE MODE
 
 		struct mm_action mm_action;
 		struct mm_cost_delta mm_cost_delta;
@@ -6511,9 +6511,9 @@ if (ok_pud) {
 			printk("PROMOTED PAGE AT %llx [C|B][%lld | %lld]\n", mm_action.address, mm_cost_delta.cost, mm_cost_delta.benefit);
 			ret = create_huge_pmd(&vmf);
 			if (!(ret & VM_FAULT_FALLBACK)) return ret;
-		}
+		} // END ESTIMATE MODE
 
-		} else {
+		} else if (DO_PMD_ESTIMATE != 0) { // ALWAYS PROMOTE
 
 		ret = create_huge_pmd(&vmf);
 		if (!(ret & VM_FAULT_FALLBACK))
