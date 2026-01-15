@@ -6334,7 +6334,7 @@ void init_values(void) {
 	PROFILE_SIZE = 58;
 }
 
-void noinline FORCE_INIT() {
+void noinline FORCE_INIT(void) {
 	HAS_INIT = false;
 	init_values();
 }
