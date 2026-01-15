@@ -6070,10 +6070,14 @@ void noinline SET_ENDS(u64 index, u64 val) {
 void noinline SET_BENEFITS(u64 index, u64 val) {
 	BENEFITS[index] = val;
 }
+void noinline SET_PROF_SIZE(u64 val) {
+	PROFILE_SIZE = val;
+}
 
 EXPORT_SYMBOL(SET_STARTS);
 EXPORT_SYMBOL(SET_ENDS);
 EXPORT_SYMBOL(SET_BENEFITS);
+EXPORT_SYMBOL(SET_PROF_SIZE);
 
 // 2. Interval tree (RB tree???) https://docs.kernel.org/core-api/rbtree.html
 // The intervals are strictly disjoint and partitioning so we don't need to do a fancy interval tree with overlaps.
@@ -6330,8 +6334,19 @@ void init_values(void) {
 	PROFILE_SIZE = 58;
 }
 
+void noinline FORCE_INIT() {
+	HAS_INIT = false;
+	init_values();
+}
+
+EXPORT_SYMBOL(FORCE_INIT);
+
 // END PROFILE DETAILS
 
+// NOTE - All estimates are measured in half-nanoseconds. 
+// L1 cache accesses, the DDR5 RAM clock cycle, etc. take around 0.5ns.
+// A standard memory access takes around 100ns <-- that's us!
+// branch misprediction costs 5ns, and L2 caches take up 7ns per reference.
 
 
 u64 noinline compute_hpage_benefit(const struct mm_action *action)
