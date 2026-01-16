@@ -6071,6 +6071,13 @@ void noinline SET_BENEFITS(u64 index, u64 val) {
 	BENEFITS[index] = val;
 }
 void noinline SET_PROF_SIZE(u64 val) {
+	if (val > PROFILE_SIZE) {
+		for (u64 i = PROFILE_SIZE; i < val; i++) {
+			STARTS[i] = -1;
+			ENDS[i] = -1;
+			BENEFITS[i] = 0;
+		}
+	}
 	PROFILE_SIZE = val;
 }
 
