@@ -6070,6 +6070,17 @@ void noinline SET_ENDS(u64 index, u64 val) {
 void noinline SET_BENEFITS(u64 index, u64 val) {
 	BENEFITS[index] = val;
 }
+
+void noinline INCREASE_BENEFITS(u64 index, u64 val, bool POS) {
+	if (POS) BENEFITS[index] += val;
+	else BENEFITS[index] -= val;
+}
+
+u64 noinline GET_BENEFITS(u64 index) {
+	return BENEFITS[index];
+}
+
+
 void noinline SET_PROF_SIZE(u64 val) {
 	if (val > PROFILE_SIZE) {
 		for (u64 i = PROFILE_SIZE; i < val; i++) {
@@ -6084,6 +6095,8 @@ void noinline SET_PROF_SIZE(u64 val) {
 EXPORT_SYMBOL(SET_STARTS);
 EXPORT_SYMBOL(SET_ENDS);
 EXPORT_SYMBOL(SET_BENEFITS);
+EXPORT_SYMBOL(GET_BENEFITS);
+EXPORT_SYMBOL(INCREASE_BENEFITS);
 EXPORT_SYMBOL(SET_PROF_SIZE);
 
 // 2. Interval tree (RB tree???) https://docs.kernel.org/core-api/rbtree.html
