@@ -6061,6 +6061,9 @@ EXPORT_SYMBOL(ENDS);
 EXPORT_SYMBOL(BENEFITS);
 EXPORT_SYMBOL(PROFILE_SIZE);
 
+u64 BENEFIT_LB = 32768;
+u64 BENEFIT_UB = 2147483647;
+
 void noinline SET_STARTS(u64 index, u64 val) {
 	STARTS[index] = val;
 }
@@ -6072,8 +6075,13 @@ void noinline SET_BENEFITS(u64 index, u64 val) {
 }
 
 void noinline INCREASE_BENEFITS(u64 index, u64 val, bool POS) {
-	if (POS) BENEFITS[index] += val;
-	else BENEFITS[index] -= val;
+	if (POS) {
+		if (BENEFITS[index] + val <= BENEFIT_UB) BENEFITS[index] += val;
+	}
+	else {
+		// benefit - val >= LB --> benefit >= LB + val
+		if (BENEFITS[index] >= BENEFIT_LB + val) BENEFITS[index] -= val;
+	}
 }
 
 u64 noinline GET_BENEFITS(u64 index) {
