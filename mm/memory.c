@@ -6061,9 +6061,6 @@ EXPORT_SYMBOL(ENDS);
 EXPORT_SYMBOL(BENEFITS);
 EXPORT_SYMBOL(PROFILE_SIZE);
 
-u64 BENEFIT_LB = 32768;
-u64 BENEFIT_UB = 2147483647;
-
 void noinline SET_STARTS(u64 index, u64 val) {
 	STARTS[index] = val;
 }
@@ -6072,6 +6069,19 @@ void noinline SET_ENDS(u64 index, u64 val) {
 }
 void noinline SET_BENEFITS(u64 index, u64 val) {
 	BENEFITS[index] = val;
+}
+
+// Bounds for checking
+
+u64 BENEFIT_LB = 32768;
+u64 BENEFIT_UB = 2147483647;
+
+void noinline SET_BENEFIT_LB(u64 val) {
+	BENEFIT_LB = val;
+}
+
+void noinline SET_BENEFIT_UB(u64 val) {
+	BENEFIT_UB = val;
 }
 
 void noinline INCREASE_BENEFITS(u64 index, u64 val, bool POS) {
@@ -6105,6 +6115,8 @@ EXPORT_SYMBOL(SET_ENDS);
 EXPORT_SYMBOL(SET_BENEFITS);
 EXPORT_SYMBOL(GET_BENEFITS);
 EXPORT_SYMBOL(INCREASE_BENEFITS);
+EXPORT_SYMBOL(SET_BENEFIT_LB);
+EXPORT_SYMBOL(SET_BENEFIT_UB);
 EXPORT_SYMBOL(SET_PROF_SIZE);
 
 // 2. Interval tree (RB tree???) https://docs.kernel.org/core-api/rbtree.html
