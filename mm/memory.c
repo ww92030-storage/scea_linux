@@ -5665,7 +5665,7 @@ out_map:
 	return 0;
 }
 
-static inline vm_fault_t create_huge_pmd(struct vm_fault *vmf)
+static inline vm_fault_t __create_huge_pmd(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
 	if (vma_is_anonymous(vma))
@@ -5673,6 +5673,10 @@ static inline vm_fault_t create_huge_pmd(struct vm_fault *vmf)
 	if (vma->vm_ops->huge_fault)
 		return vma->vm_ops->huge_fault(vmf, PMD_ORDER);
 	return VM_FAULT_FALLBACK;
+}
+
+vm_fault_t create_huge_pmd(struct vm_fault *vmf) {
+	return __create_huge_pmd(vmf);
 }
 
 EXPORT_SYMBOL_GPL(create_huge_pmd);
