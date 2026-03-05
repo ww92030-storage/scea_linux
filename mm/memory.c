@@ -96,6 +96,12 @@
 
 // END CBMM SPECIFIC INCLUDES
 
+// BEGIN CUSTOM INCLUDES
+
+#include <linux/rational.h>
+
+// END CUSTOM INCLUDES
+
 #if defined(LAST_CPUPID_NOT_IN_PAGE_FLAGS) && !defined(CONFIG_COMPILE_TEST)
 #warning Unfortunate NUMA and NUMA Balancing config, growing page-frame for last_cpupid.
 #endif
@@ -6080,7 +6086,7 @@ void noinline SET_BENEFITS(u64 index, u64 val) {
 // Bounds for checking
 
 u64 BENEFIT_LB = 32768;
-u64 BENEFIT_UB = 2147483647;
+u64 BENEFIT_UB = (1<<31) - 1;
 
 void noinline SET_BENEFIT_LB(u64 val) {
 	BENEFIT_LB = val;
@@ -6098,6 +6104,21 @@ void noinline INCREASE_BENEFITS(u64 index, u64 val, bool POS) {
 		// benefit - val >= LB --> benefit >= LB + val
 		if (BENEFITS[index] >= BENEFIT_LB + val) BENEFITS[index] -= val;
 	}
+}
+
+void noinline SCALE_BENEFITS(u64 index, u64 num, u64 denom) {
+	if (denom == 0) return;
+
+	u64 max_things = 1<<16;
+	u64 approx_num, approx_denom;
+	if (num < max_things && denom < max_things) {
+		approx_num = num;
+		approx_denom = denom;
+	}
+	else rational_best_approximation(num, denom, max_things, max_things, &approx_num, &approx_denom);
+
+	u64 result = (BENEFITS[index] * approx_num) / approx_denom;
+	if (result >= BENEFIT_LB && result <= BENEFIT_UB) BENEFITS[index] = result;
 }
 
 u64 noinline GET_BENEFITS(u64 index) {
