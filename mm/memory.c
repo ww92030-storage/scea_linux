@@ -6106,7 +6106,7 @@ void noinline INCREASE_BENEFITS(u64 index, u64 val, bool POS) {
 	}
 }
 
-void noinline SCALE_BENEFITS(u64 index, unsigned long num, unsigned long denom) {
+void noinline SCALE_BENEFITS(u64 index, u64 num, u64 denom) {
 	if (denom == 0) return;
 
 	unsigned long max_things = 1<<16;
@@ -6145,6 +6145,7 @@ EXPORT_SYMBOL(INCREASE_BENEFITS);
 EXPORT_SYMBOL(SET_BENEFIT_LB);
 EXPORT_SYMBOL(SET_BENEFIT_UB);
 EXPORT_SYMBOL(SET_PROF_SIZE);
+EXPORT_SYMBOL(SCALE_BENEFITS);
 
 // 2. Interval tree (RB tree???) https://docs.kernel.org/core-api/rbtree.html
 // The intervals are strictly disjoint and partitioning so we don't need to do a fancy interval tree with overlaps.
