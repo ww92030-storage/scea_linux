@@ -6106,18 +6106,18 @@ void noinline INCREASE_BENEFITS(u64 index, u64 val, bool POS) {
 	}
 }
 
-void noinline SCALE_BENEFITS(u64 index, u64 num, u64 denom) {
+void noinline SCALE_BENEFITS(u64 index, unsigned long num, unsigned long denom) {
 	if (denom == 0) return;
 
-	u64 max_things = 1<<16;
-	u64 approx_num, approx_denom;
+	unsigned long max_things = 1<<16;
+	unsigned long approx_num, approx_denom;
 	if (num < max_things && denom < max_things) {
 		approx_num = num;
 		approx_denom = denom;
 	}
 	else rational_best_approximation(num, denom, max_things, max_things, &approx_num, &approx_denom);
 
-	u64 result = (BENEFITS[index] * approx_num) / approx_denom;
+	u64 result = (BENEFITS[index] * (u64)(approx_num)) / (u64)(approx_denom);
 	if (result >= BENEFIT_LB && result <= BENEFIT_UB) BENEFITS[index] = result;
 }
 
