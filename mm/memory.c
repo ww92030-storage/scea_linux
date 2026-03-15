@@ -6246,12 +6246,31 @@ EXPORT_SYMBOL(FORCE_INIT);
 // A standard memory access takes around 100ns <-- that's us!
 // branch misprediction costs 5ns, and L2 caches take up 7ns per reference.
 
+bool BINARY_SEARCH = true;
+
+void noinline DO_BINARY_SEARCH(u64 b) {
+	BINARY_SEARCH = b;
+}
+
+EXPORT_SYMBOL(DO_BINARY_SEARCH);
+
 
 u64 noinline compute_hpage_benefit(const struct mm_action *action)
 {
 	if (unlikely(!HAS_INIT)) init_values();
 	u64 addr = action->address;
-	for (u64 i = 0; i < PROFILE_SIZE; i++) {
+	u64 L = 0;
+	if (BINARY_SEARCH) {
+		u64 H = PROFILE_SIZE - 1;
+		while (L + 2 <= H) {
+			u64 M = (L + H)>>1;
+			if (STARTS[M] > addr) H = M;
+			else if (ENDS[M] <= addr) L = M;
+			else return BENEFITS[M];
+		}
+	}
+	if (L) L--; // give a threshold
+	for (u64 i = L; i < PROFILE_SIZE; i++) {
 		if (addr >= STARTS[i] && addr < ENDS[i]) {
 			// printk("ADDR: %llu | RANGE: [%llu, %llu) | B: %llu\n", addr, STARTS[i], ENDS[i], BENEFITS[i]);
 			return BENEFITS[i];
