@@ -6060,7 +6060,7 @@ EXPORT_SYMBOL(SET_DO_PMD_ESTIMATE);
 
 // 1. Array implementation
 
-#define PROFILE_MAXLEN (1<<14)
+#define PROFILE_MAXLEN (1<<20)
 
 u64 PROFILE_SIZE = 0;
 
