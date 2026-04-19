@@ -6440,7 +6440,7 @@ if (ok_pud) {
 		
 
 		if (should_do) {
-			printk("PROMOTED PAGE AT %llx [C|B][%lld | %lld]\n", mm_action.address, mm_cost_delta.cost, mm_cost_delta.benefit);
+			if (mm_econ_debugging_mode == 1) printk("PROMOTED PAGE AT %llx [C|B][%lld | %lld]\n", mm_action.address, mm_cost_delta.cost, mm_cost_delta.benefit);
 			ret = create_huge_pmd(&vmf);
 			if (!(ret & VM_FAULT_FALLBACK)) return ret;
 		} // END ESTIMATE MODE
